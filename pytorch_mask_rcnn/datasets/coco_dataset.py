@@ -2,9 +2,9 @@ import os
 from PIL import Image
 
 import torch
-from .generalized_dataset import GeneralizedDataset
+from .generalized_dataset import GeneralizedDataset #
 
-class COCODataset(GeneralizedDataset)
+class COCODataset(GeneralizedDataset):
     def __init__(self, data_dir, split, train=False):
         super().__init__()
         from pycocotools.coco import COCO
@@ -38,10 +38,10 @@ class COCODataset(GeneralizedDataset)
     @staticmethod
     def convert_to_xyxy(box):
         new_box = torch.zeros_like(box)
-        new_box = [:, 0] = box[:, 0]
-        new_box = [:, 1] = box[:, 1]
-        new_box = [:, 2] = box[:, 0] + box[:, 2]
-        new_box = [: ,3] = box[:, 1] + box[:, 3]
+        new_box[:, 0] = box[:, 0]
+        new_box[:, 1] = box[:, 1]
+        new_box[:, 2] = box[:, 0] + box[:, 2]
+        new_box[: ,3] = box[:, 1] + box[:, 3]
         return new_box
 
     def get_target(self, img_id):
