@@ -56,18 +56,18 @@ def perpare_for_coco(predictions, ann_labels):
 
     masks = masks > 0.5
     rles = [
-        masks_util.encode(np.array(mask[:, :, np.newaxis], dtype=np.uint8, order="F"))[0]
+        mask_util.encode(np.array(mask[:, :, np.newaxis], dtype=np.uint8, order="F"))[0]
         for mask in masks
     ]
     for rle in rles:
-        rle["counts"] = rls["counts"].decode("utf-8")
+        rle["counts"] = rle["counts"].decode("utf-8")
 
     coco_results.extend(
         [
             {
                 "image_id": original_id,
                 "category_id": labels[i],
-                "bbox": boxes[i]
+                "bbox": boxes[i],
                 "segmentation": rle,
                 "score": scores[i],
             }

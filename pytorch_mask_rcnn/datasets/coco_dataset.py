@@ -2,7 +2,7 @@ import os
 from PIL import Image
 
 import torch
-from .generalized_dataset import GeneralizedDataset #
+from pytorch_mask_rcnn.datasets.generalized_dataset import GeneralizedDataset #
 
 class COCODataset(GeneralizedDataset):
     def __init__(self, data_dir, split, train=False):
