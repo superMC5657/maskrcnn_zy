@@ -68,7 +68,7 @@ class RegionProposalNetwork(nn.Module):
 
         pos_idx, neg_idx = self.fg_bg_sampler(label)
         idx = torch.cat((pos_idx, neg_idx))
-        regression_target = self.box_coder.encode(gt_box[matched_idx[pos_idx]], anchor[pos_idx]) # classification loss?
+        regression_target = self.box_coder.encode(gt_box[matched_idx[pos_idx]], anchor[pos_idx])
 
         objectness_loss = F.binary_cross_entropy_with_logits(objectness[idx], label[idx])
         box_loss = F.l1_loss(pred_bbox_delta[pos_idx], regression_target, reduction='sum') / idx.numel()

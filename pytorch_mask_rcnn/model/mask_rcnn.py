@@ -168,14 +168,15 @@ def maskrcnn_resnet50(pretrained, num_classes, pretrained_backbone=True):
             'maskrcnn_resnet50_fpn_coco':
                 'https://download.pytorch.org/models/maskrcnn_resnet50_fpn_coco-bf2d0c1e.pth',
         }
-        model_state_dict = load_url(models_urls['maskrcnn_resnet50_fpn_coco'])
+        model_state_dict = load_url(models_urls['maskrcnn_resnet50_fpn_coco'], model_dir="/home1/zhangyan/workplace/maskrcnn_zy/weight/")
 
         pretrained_msd = list(model_state_dict.values())
         del_list = [i for i in range(265, 271)] + [i for i in range(273, 279)]
         for i, del_idx in enumerate(del_list):
             pretrained_msd.pop(del_idx - i)
-
-        msd = model_state_dict()
+        # print(model_state_dict) success
+        msd = model.state_dict()
+        print(msd)
         skip_list = [271, 272, 273, 274, 279, 280, 281, 282, 293, 294]
         if num_classes == 91:
             skip_list = [271, 272, 273, 274]

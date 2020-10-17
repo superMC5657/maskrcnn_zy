@@ -7,7 +7,7 @@ def datasets(ds, *args, **kwargs):
     ds = ds.lower()
     choice = ["voc", "coco"]
     if ds == choice[0]:
-        return VOCDataset(*args, **kwargs)
+        return COCODataset(*args, **kwargs) # use coco
     if ds == choice[1]:
         return COCODataset(*args, **kwargs)
     else:

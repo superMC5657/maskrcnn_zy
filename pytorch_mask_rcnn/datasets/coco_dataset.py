@@ -32,7 +32,7 @@ class COCODataset(GeneralizedDataset):
     def get_image(self, img_id):
         img_id = int(img_id)
         img_info = self.coco.imgs[img_id]
-        image = Image.open(os.path.join(self.data_dir, "{}".format(self.split), img_info["file_name"]))
+        image = Image.open(os.path.join(self.data_dir, "images", "{}".format(self.split), img_info["file_name"]))
         return image.convert("RGB")
 
     @staticmethod
