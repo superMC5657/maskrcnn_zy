@@ -5,19 +5,20 @@ from torch import nn
 from torch.utils.model_zoo import load_url
 from torchvision import models
 from torchvision.ops import misc
-
+import torchvision
 from pytorch_mask_rcnn.model.utils import AnchorGenerator
 from pytorch_mask_rcnn.model.rpn import RPNHead, RegionProposalNetwork
 from pytorch_mask_rcnn.model.pooler import RoIAlign
 from pytorch_mask_rcnn.model.roi_heads import RoIHeads
 from pytorch_mask_rcnn.model.transform import Transformer
 
+
 class MaskRCNN(nn.Module):
     def __init__(self, backbone, num_classes,
                  # RPN parameters
                  rpn_fg_iou_thresh=0.7, rpn_bg_iou_thresh=0.3,
-                 rpn_num_samples = 256, rpn_positive_fraction=0.5,
-                 rpn_reg_weights = (1., 1., 1., 1.),
+                 rpn_num_samples=256, rpn_positive_fraction=0.5,
+                 rpn_reg_weights=(1., 1., 1., 1.),
                  rpn_pre_nms_top_n_train=2000, rpn_pre_nms_top_n_test=1000,
                  rpn_post_nms_top_n_train=2000, rpn_post_nms_top_n_test=1000,
                  rpn_nms_thresh=0.7,
@@ -30,7 +31,7 @@ class MaskRCNN(nn.Module):
         self.backbone = backbone
         out_channels = backbone.out_channels
 
-        #------------- RPN --------------------------
+        # ------------- RPN --------------------------
         anchor_sizes = (128, 256, 512)
         anchor_ratios = (0.5, 1, 2)
         num_anchors = len(anchor_sizes) * len(anchor_ratios)
@@ -46,7 +47,7 @@ class MaskRCNN(nn.Module):
             rpn_reg_weights,
             rpn_pre_nms_top_n, rpn_post_nms_top_n, rpn_nms_thresh)
 
-        #--------------------RoIHeads---------------
+        # --------------------RoIHeads---------------
         box_roi_pool = RoIAlign(output_size=(7, 7), sampling_ratio=2)
 
         resolution = box_roi_pool.output_size[0]
@@ -67,9 +68,9 @@ class MaskRCNN(nn.Module):
         dim_reduced = 256
         self.head.mask_predictor = MaskRCNNPredictor(out_channels, layers, dim_reduced, num_classes)
 
-        #--------------------Transformer------------------------
+        # --------------------Transformer------------------------
         self.transformer = Transformer(
-            min_size=800, max_size=1333,
+            min_size=800, max_size=1312,
             image_mean=[0.485, 0.456, 0.406],
             image_std=[0.229, 0.224, 0.225])
 
@@ -82,7 +83,7 @@ class MaskRCNN(nn.Module):
 
         proposal, rpn_losses = self.rpn(feature, image_shape, target)
         result, roi_losses = self.head(feature, proposal, image_shape, target)
-
+        return list(result.values())
         if self.training:
             return dict(**rpn_losses, **roi_losses)
         else:
@@ -156,6 +157,7 @@ class ResBackbone(nn.Module):
         x = self.layer_block_module(x)
         return x
 
+
 def maskrcnn_resnet50(pretrained, num_classes, pretrained_backbone=True):
     if pretrained:
         backbone_pretrained = False
@@ -168,21 +170,46 @@ def maskrcnn_resnet50(pretrained, num_classes, pretrained_backbone=True):
             'maskrcnn_resnet50_fpn_coco':
                 'https://download.pytorch.org/models/maskrcnn_resnet50_fpn_coco-bf2d0c1e.pth',
         }
-        model_state_dict = load_url(models_urls['maskrcnn_resnet50_fpn_coco'], model_dir="/home1/zhangyan/workplace/maskrcnn_zy/weight/")
+        model_state_dict = load_url(models_urls['maskrcnn_resnet50_fpn_coco'],
+                                    model_dir="/home1/zhangyan/workplace/maskrcnn_zy/weight/")
 
         pretrained_msd = list(model_state_dict.values())
+        #    RawNet = SummaryWriter('runs/maskrchh_raw') frist read 307
         del_list = [i for i in range(265, 271)] + [i for i in range(273, 279)]
         for i, del_idx in enumerate(del_list):
             pretrained_msd.pop(del_idx - i)
+        # than pop to 295
         # print(model_state_dict) success
         msd = model.state_dict()
-        print(msd)
+        # print(msd)
         skip_list = [271, 272, 273, 274, 279, 280, 281, 282, 293, 294]
-        if num_classes == 91:
+        p_msd = []
+        if num_classes == 91:  # not run here
             skip_list = [271, 272, 273, 274]
-        for i, name in enumerate(msd):
+        # print(len(pretrained_msd)) 295
+        for i, (name, single_state_dict) in enumerate(zip(msd, model_state_dict)):
             if i in skip_list:
+                p_msd.append(single_state_dict)
                 continue
             msd[name].copy_(pretrained_msd[i])
+        # skip 10 but still 295
+        # print(len(msd)) 295
         model.load_state_dict(msd)
+
+    return model
+
+
+def maskrcnn_resnet50_raw():
+    models_urls = {
+            'maskrcnn_resnet50_fpn_coco':
+                'https://download.pytorch.org/models/maskrcnn_resnet50_fpn_coco-bf2d0c1e.pth',
+        }
+    model_state_dict = load_url(models_urls['maskrcnn_resnet50_fpn_coco'],
+                                model_dir="/home1/zhangyan/workplace/maskrcnn_zy/weight/")
+    model = torchvision.models.detection.maskrcnn_resnet50_fpn()
+    pretrained_msd = list(model_state_dict.values())
+    msd = model.state_dict()
+    for i, (name, single_state_dict) in enumerate(zip(msd, model_state_dict)):
+        msd[name].copy_(pretrained_msd[i])
+    model.load_state_dict(msd)
     return model
