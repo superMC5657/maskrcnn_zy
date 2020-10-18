@@ -2,8 +2,9 @@ import math
 
 import torch
 
+
 class BoxCoder:
-    def __init__(self, weights, bbox_xfrom_clip=math.log(1000. / 16)): # 4.1351
+    def __init__(self, weights, bbox_xfrom_clip=math.log(1000. / 16)):  # 4.1351
         self.weights = weights
         self.bbox_xfrom_clip = bbox_xfrom_clip
 
@@ -30,7 +31,7 @@ class BoxCoder:
         dw = self.weights[2] * torch.log(gt_width / width)
         dh = self.weights[3] * torch.log(gt_height / height)
 
-        delta = torch.stack((dx, dy, dw, dh), dim=1) # stack 2 div
+        delta = torch.stack((dx, dy, dw, dh), dim=1)  # stack 2 div
         return delta
 
     def decode(self, delta, box):
@@ -43,7 +44,7 @@ class BoxCoder:
         dh = torch.clamp(dh, max=self.bbox_xfrom_clip)
 
         width = box[:, 2] - box[:, 0]
-        height = box[: 3] - box[:, 1]
+        height = box[:, 3] - box[:, 1]
         ctr_x = box[:, 0] + 0.5 * width
         ctr_y = box[:, 1] + 0.5 * height
 
@@ -70,19 +71,22 @@ def box_iou(box_a, box_b):
     area_a = torch.prod(box_a[:, 2:] - box_a[:, :2], 1)
     area_b = torch.prod(box_b[:, 2:] - box_b[:, :2], 1)
 
-    return inter / (area_a[:, None] + area_b - inter) #
+    return inter / (area_a[:, None] + area_b - inter)  #
+
 
 def process_box(box, score, image_shape, min_size):
     box[:, [0, 2]] = box[:, [0, 2]].clamp(0, image_shape[1])
-    box[:, [1, 3]] = box[:, [0, 2]].clamp(0, image_shape[1])
+    box[:, [1, 3]] = box[:, [1, 3]].clamp(0, image_shape[0])
 
     w, h = box[:, 2] - box[:, 0], box[:, 3] - box[:, 1]
-    keep = torch.where((w >= min_size) & (h >= min_size))[0] # ?
+    keep = torch.where((w >= min_size) & (h >= min_size))[0]  # ?
     box, score = box[keep], score[keep]
     return box, score
 
+
 def nms(box, score, threshold):
     return torch.ops.torchvision.nms(box, score, threshold)
+
 
 def slow_nms(box, num_thresh):
     idx = torch.arange(box.size(0))
@@ -91,11 +95,7 @@ def slow_nms(box, num_thresh):
     while idx.size(0) > 0:
         keep.append(idx[0].item())
         head_box = box[idx[0], None, :]
-        remain = torch.where(box_iou(head_box, box[idx]) <= nms_thresh)[1]
+        remain = torch.where(box_iou(head_box, box[idx]) <= num_thresh)[1]
         idx = idx[remain]
 
     return keep
-
-
-
-

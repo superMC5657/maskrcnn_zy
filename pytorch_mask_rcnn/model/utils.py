@@ -1,5 +1,6 @@
 import torch
 
+
 class Matcher:
     def __init__(self, high_threshold, low_threshold, allow_low_quality_matches=False):
         self.high_threshold = high_threshold
@@ -11,25 +12,26 @@ class Matcher:
         label = torch.full((iou.shape[1],), -1, dtype=torch.float, device=iou.device)
 
         label[value >= self.high_threshold] = 1
-        label[value <  self.low_threshold]  = 0
+        label[value < self.low_threshold] = 0
 
         if self.allow_low_quality_matches:
-            hightest_quality = iou.max(dim=1)[0]
-            gt_pred_pairs = torch.where(iou == hightest_quality[:, None])[1]
+            highest_quality = iou.max(dim=1)[0]
+            gt_pred_pairs = torch.where(iou == highest_quality[:, None])[1]
             label[gt_pred_pairs] = 1
 
         return label, matched_idx
 
+
 class BalancedPositiveNegativeSampler:
-    def __init__(self, num_samples, postive_fraction):
+    def __init__(self, num_samples, positive_fraction):
         self.num_samples = num_samples
-        self.postive_fraction = postive_fraction
+        self.positive_fraction = positive_fraction
 
     def __call__(self, label):
         positive = torch.where(label == 1)[0]
         negative = torch.where(label == 0)[0]
 
-        num_pos = int(self.num_samples * self.postive_fraction)
+        num_pos = int(self.num_samples * self.positive_fraction)
         num_pos = min(positive.numel(), num_pos)
         num_neg = self.num_samples - num_pos
         num_neg = min(negative.numel(), num_neg)
@@ -41,6 +43,7 @@ class BalancedPositiveNegativeSampler:
         neg_idx = negative[neg_perm]
 
         return pos_idx, neg_idx
+
 
 def roi_align(features, rois, spatial_scale, pooled_height, pooled_width, sampling_ratio):
     return torch.ops.torchvision.roi_align(
@@ -58,7 +61,7 @@ class AnchorGenerator:
     def set_cell_anchor(self, dtype, device):
         if self.cell_anchor is not None:
             return
-        sizes  = torch.tensor(self.sizes,  dtype=dtype, device=device)
+        sizes = torch.tensor(self.sizes, dtype=dtype, device=device)
         ratios = torch.tensor(self.ratios, dtype=dtype, device=device)
 
         h_ratios = torch.sqrt(ratios)
@@ -71,13 +74,13 @@ class AnchorGenerator:
 
     def grid_anchor(self, grid_size, stride):
         dtype, device = self.cell_anchor.dtype, self.cell_anchor.device
-        shift_x = torch.arange(0, grid_size[1], dtype=dtype, device=device) * stride[1] # arange ~= range
+        shift_x = torch.arange(0, grid_size[1], dtype=dtype, device=device) * stride[1]  # arange ~= range
         shift_y = torch.arange(0, grid_size[0], dtype=dtype, device=device) * stride[0]  # arange ~= range
 
         y, x = torch.meshgrid(shift_y, shift_x)
         x = x.reshape(-1)
         y = y.reshape(-1)
-        shift = torch.stack((x, y, x ,y), dim=1).reshape(-1, 1, 4)
+        shift = torch.stack((x, y, x, y), dim=1).reshape(-1, 1, 4)
 
         anchor = (shift + self.cell_anchor).reshape(-1, 4)
         return anchor
@@ -85,7 +88,7 @@ class AnchorGenerator:
     def cached_grid_anchor(self, grid_size, stride):
         key = grid_size + stride
         if key in self._cache:
-            return self._cache
+            return self._cache[key]
         anchor = self.grid_anchor(grid_size, stride)
 
         if len(self._cache) >= 3:

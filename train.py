@@ -9,13 +9,16 @@ import numpy as np
 import pycocotools.mask as mask_util
 from torchvision import transforms
 
-#from .generalized_dataset import GeneralizedDataset
+
+# from .generalized_dataset import GeneralizedDataset
 
 def main(args):
-    device = torch.device("cuda" if torch.cuda.is_available() ): # TODO:args.use_cuda
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # TODO:args.use_cuda
+
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", default="")
 
@@ -39,7 +42,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.lr is None:
-        args.lr = 0.02 * 1 / 16 # lr should be 'batch_size / 16 * 0.02' experience formula
-
-
-
+        args.lr = 0.02 * 1 / 16  # lr should be 'batch_size / 16 * 0.02' experience formula
