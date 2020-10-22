@@ -11,7 +11,7 @@ class GeneralizedDataset:
         self.verbose = verbose
 
     def __getitem__(self, item):
-        img_id = self.ids[i]
+        img_id = self.ids[item]
         image = self.get_image(img_id)
         image = transforms.ToTensor()(image)
         target = self.get_target(img_id) if self.train else {}

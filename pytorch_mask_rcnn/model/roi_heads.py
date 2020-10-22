@@ -101,7 +101,7 @@ class RoIHeads(nn.Module):
 
             box, score = process_box(box, score, image_shape, self.min_size)
             keep = nms(box, score, self.nms_thresh)[:self.num_detections]
-            box, score = box[keep], box[score]
+            box, score = box[keep], score[keep]
             label = torch.full((len(keep),), i, dtype=keep.dtype, device=device)
 
             boxes.append(box)
@@ -149,11 +149,11 @@ class RoIHeads(nn.Module):
                 mask_loss = maskrcnn_loss(mask_logit, mask_proposal, pos_match_idx, mask_label, gt_mask)
                 losses.update(dict(roi_mask_loss=mask_loss))
             else:
-                label = result['label']
+                label = result['labels']
                 idx = torch.arange(label.shape[0], device=label.device)
                 mask_logit = mask_logit[idx, label]
 
-                mask_prob = mask_logit.sigmod()
+                mask_prob = mask_logit.sigmoid()
                 result.update(dict(masks=mask_prob))
 
         return result, losses

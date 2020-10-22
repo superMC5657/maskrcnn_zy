@@ -57,7 +57,8 @@ class MaskRCNN(nn.Module, ABC):
         box_predictor = FastRCNNPredictor(in_channels, mid_channels, num_classes)
 
         self.head = RoIHeads(box_roi_pool, box_predictor, box_fg_iou_thresh, box_bg_iou_thresh, box_num_samples,
-                             box_positive_fraction, box_reg_weights, box_score_thresh, box_nms_thresh,box_num_detections)
+                             box_positive_fraction, box_reg_weights, box_score_thresh, box_nms_thresh,
+                             box_num_detections)
 
         self.head.mask_roi_pool = RoIAlign(output_size=(14, 14), sampling_ratio=2)
         layers = (256, 256, 256, 256)
@@ -144,11 +145,10 @@ class MaskRCNNPredictor(nn.Sequential, ABC):
         order_dict['mask_conv5'] = nn.ConvTranspose2d(next_feature, dim_reduced, 2, 2, 0)
         order_dict['relu5'] = nn.ReLU(inplace=True)
         order_dict['mask_fcn_logits'] = nn.Conv2d(dim_reduced, num_classes, 1, 1, 0)
-
+        super().__init__(order_dict)
         for name, param in self.named_parameters():
             if 'weight' in name:
                 nn.init.kaiming_normal_(param, mode='fan_out', nonlinearity='relu')
-        super().__init__(order_dict)
 
 
 def maskrcnn_resnet50(pretrained, num_classes, pretrained_backbone=True):
@@ -161,7 +161,7 @@ def maskrcnn_resnet50(pretrained, num_classes, pretrained_backbone=True):
     """
 
     if pretrained:
-        backbone_pretrained = False
+        pretrained_backbone = False
 
     backbone = ResBackbone('resnet50', pretrained_backbone)
     model = MaskRCNN(backbone, num_classes)

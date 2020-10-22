@@ -1,5 +1,6 @@
 #from .voc_dataset import VOCDataset
-from pytorch_mask_rcnn.datasets.coco_dataset import COCODataset
+from .coco_dataset import COCODataset
+from .voc_dataset import VOCDataset
 
 __all__ = ["datasets", "collate_wrapper"]
 

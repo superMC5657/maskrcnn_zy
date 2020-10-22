@@ -5,6 +5,7 @@ import torch
 
 __all__ = ["save_ckpt", "Meter"]
 
+
 def save_ckpt(model, optimizer, epochs, ckpt_path, **kwargs):
     checkpoint = {}
     checkpoint["model"] = model.state_dict()
@@ -17,6 +18,7 @@ def save_ckpt(model, optimizer, epochs, ckpt_path, **kwargs):
     prefix, ext = os.path.splitext(ckpt_path)
     ckpt_path = "{}-{}{}".format(prefix, epochs, ext)
     torch.save(checkpoint, ckpt_path)
+
 
 class TextArea:
     def __init__(self):
@@ -34,6 +36,7 @@ class TextArea:
         values = [int(v) / 10 for v in values]
         result = {"bbox AP": values[0], "mask AP": values[12]}
         return result
+
 
 class Meter:
     def __init__(self, name):
@@ -55,3 +58,4 @@ class Meter:
     def __str__(self):
         fmtstr = "{name}:sum={sum:.2f}, avg={avg:.4f}, count={count}"
         return fmtstr.format(**self.__dict__)
+

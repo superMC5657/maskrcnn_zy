@@ -1,17 +1,19 @@
-import torch
+import sys
 import time
 
-from pytorch_mask_rcnn import Meter
+import torch
+
+from .utils import Meter, TextArea
 
 try:
-    from pytorch_mask_rcnn.datasets import CocoEvaluator, prepare_for_coco
+    from .datasets import CocoEvaluator, prepare_for_coco
 except:
     pass
 
 
 def train_one_epoch(model, optimizer, data_loader, device, epoch, args):
     for p in optimizer.param_groups:
-        p['lr'] = args.lr_epoch
+        p["lr"] = args.lr_epoch
 
     iters = len(data_loader) if args.iters < 0 else args.iters
 
@@ -23,7 +25,8 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, args):
     for i, (image, target) in enumerate(data_loader):
         T = time.time()
         num_iters = epoch * len(data_loader) + i
-        if num_iters <= args.warmup_iters
+        if num_iters <= args.warmup_iters:
+            r = num_iters / args.warmup_iters
             for j, p in enumerate(optimizer.param_groups):
                 p["lr"] = r * args.lr_epoch
 
@@ -48,16 +51,39 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, args):
         if i >= iters - 1:
             break
 
-        A = time.time() - A
-        print("iter: {:.1f}, total: {:.1f}, model: {:.1f}, backward: {:.1f}".format(1000*A/iters, 1000*t_m.avg, 1000*b_m.avg))
-        return A / iters
+    A = time.time() - A
+    print("iter: {:.1f}, total: {:.1f}, model: {:.1f}, backward: {:.1f}".format(1000 * A / iters, 1000 * t_m.avg,
+                                                                                1000 * m_m.avg, 1000 * b_m.avg))
+    return A / iters
+
 
 def evaluate(model, data_loader, device, args, generate=True):
     if generate:
         iter_eval = generate_results(model, data_loader, device, args)
 
+    dataset = data_loader  #
+    iou_types = ["bbox", "segm"]
+    coco_evaluator = CocoEvaluator(dataset.coco, iou_types)
+
+    results = torch.load(args.results, map_location="cpu")
+
+    S = time.time()
+    coco_evaluator.accumulate(results)
+    print("accumulate: {:.1f}s".format(time.time() - S))
+
+    # collect outputs of buildin function print
+    temp = sys.stdout
+    sys.stdout = TextArea()
+
+    coco_evaluator.summarize()
+
+    output = sys.stdout
+    sys.stdout = temp
+
+    return output, iter_eval
 
 
+# generate results file
 @torch.no_grad()
 def generate_results(model, data_loader, device, args):
     iters = len(data_loader) if args.iters < 0 else args.iters
@@ -80,4 +106,19 @@ def generate_results(model, data_loader, device, args):
         m_m.update(time.time() - S)
 
         prediction = {target["image_id"].item(): {k: v.cpu() for k, v in output.items()}}
-        coco_results.extend(prepare_for_coco)
+        coco_results.extend(prepare_for_coco(prediction, ann_labels))
+
+        t_m.update(time.time() - T)
+        if i >= iters - 1:
+            break
+
+    A = time.time() - A
+    print("iter: {:.1f}, total: {:.1f}, model: {:.1f}".format(1000 * A / iters, 1000 * t_m.avg, 1000 * m_m.avg))
+
+    S = time.time()
+    print("all gather: {:.1f}s".format(time.time() - S))
+    torch.save(coco_results, args.results)
+
+    return A / iters
+
+
